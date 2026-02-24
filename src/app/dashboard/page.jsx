@@ -407,9 +407,10 @@ function KategorienTab({ categories, setCategories }) {
 }
 
 // ─── Übersicht-Tab ───
-function UebersichtTab({ data }) {
+function UebersichtTab({ data, categories }) {
     const { summary, cashflowSeries, topCategories, recentTransactions } = data;
     const labels = cashflowSeries.map(m => m.label);
+    const [selectedCat, setSelectedCat] = useState(null);
 
     const barData = {
         labels,
@@ -445,6 +446,15 @@ function UebersichtTab({ data }) {
 
     return (
         <main className={styles.grid}>
+            {/* Kategorie-Detail-Modal aus Overview */}
+            {selectedCat && (
+                <div className={styles.modalOverlay} onClick={() => setSelectedCat(null)}>
+                    <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: 20, width: '100%', maxWidth: 800, maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <KategorieDetail cat={selectedCat} onBack={() => setSelectedCat(null)} categories={categories} />
+                    </div>
+                </div>
+            )}
+
             {/* Balkendiagramm */}
             <div className={`card ${styles.chartCard}`}>
                 <div className={styles.cardHeader}>
@@ -477,12 +487,19 @@ function UebersichtTab({ data }) {
                 <div className={styles.lineWrap}><Line data={lineData} options={lineOptions} /></div>
             </div>
 
-            {/* Top Ausgaben */}
+            {/* Top Ausgaben — klickbar */}
             <div className={`card ${styles.catCard}`}>
-                <div className={styles.cardHeader}><h2 className={styles.cardTitle}>Top Ausgaben</h2><p className={styles.cardSub}>Kategorien 2025</p></div>
+                <div className={styles.cardHeader}><h2 className={styles.cardTitle}>Top Ausgaben</h2><p className={styles.cardSub}>Kategorien 2025 · anklicken für Details</p></div>
                 <div className={styles.catList}>
                     {topCategories.map(cat => (
-                        <div key={cat.category_id} className={styles.catRow}>
+                        <div
+                            key={cat.category_id}
+                            className={`${styles.catRow} ${styles.catRowClick}`}
+                            onClick={() => {
+                                const fullCat = (categories || []).find(c => c.category_id === cat.category_id);
+                                setSelectedCat(fullCat || { category_id: cat.category_id, label: cat.label, color_hex: cat.color });
+                            }}
+                        >
                             <div className={styles.catLeft}><span className={styles.catDot} style={{ background: cat.color }} /><span className={styles.catLabel}>{cat.label}</span></div>
                             <div className={styles.catRight}>
                                 <span className={styles.catAmount}>{fmt(cat.amount)}</span>
@@ -493,12 +510,12 @@ function UebersichtTab({ data }) {
                 </div>
             </div>
 
-            {/* Feature Card */}
-            <div className={`card ${styles.featureCard}`}>
-                <div className={styles.featureOrb} />
+            {/* Feature Card — rot wenn Ausgaben > Einnahmen */}
+            <div className={`card ${styles.featureCard}`} style={{ background: nettoPositiv ? 'linear-gradient(135deg, #0a1e14 0%, #0d0d0d 100%)' : 'linear-gradient(135deg, #1e0a0a 0%, #0d0d0d 100%)' }}>
+                <div className={styles.featureOrb} style={{ background: nettoPositiv ? 'radial-gradient(circle at 35% 35%, #6ee7b7, #059669, #064e3b)' : 'radial-gradient(circle at 35% 35%, #fca5a5, #dc2626, #7f1d1d)', boxShadow: nettoPositiv ? '0 0 30px rgba(74,222,128,0.45), 0 0 60px rgba(74,222,128,0.2)' : '0 0 30px rgba(239,68,68,0.45), 0 0 60px rgba(239,68,68,0.2)' }} />
                 <div className={styles.featureContent}>
-                    <h2 className={styles.featureTitle}>{summary.netto < 0 ? 'Ausgaben übersteigen Einnahmen!' : 'Gut gemacht!'}</h2>
-                    <p className={styles.featureSub}>{summary.netto < 0 ? `Differenz: ${fmt(Math.abs(summary.netto))}` : `Gespart: ${fmt(summary.netto)}`}</p>
+                    <h2 className={styles.featureTitle} style={{ color: nettoPositiv ? '#6ee7b7' : '#fca5a5' }}>{nettoPositiv ? 'Gut gemacht! 🎉' : 'Ausgaben > Einnahmen!'}</h2>
+                    <p className={styles.featureSub}>{nettoPositiv ? `Gespart: ${fmt(summary.netto)}` : `Differenz: ${fmt(Math.abs(summary.netto))}`}</p>
                 </div>
             </div>
 
@@ -572,7 +589,7 @@ export default function DashboardPage() {
                 </div>
             </header>
 
-            {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} />}
+            {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} categories={categories} />}
             {activeTab === 'transaktionen' && <TransaktionenTab categories={categories} />}
             {activeTab === 'kategorien' && <KategorienTab categories={categories} setCategories={setCategories} />}
         </div>

@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// GET /api/categories
+export async function GET() {
+    const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('label', { ascending: true });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data);
+}
+
 // POST /api/categories — neue Kategorie anlegen
 export async function POST(request) {
     const body = await request.json();
@@ -8,7 +18,6 @@ export async function POST(request) {
 
     if (!label?.trim()) return NextResponse.json({ error: 'Label darf nicht leer sein.' }, { status: 400 });
 
-    // category_id aus label ableiten (lowercase, Umlaute ersetzen, Leerzeichen → -)
     const id = label.toLowerCase()
         .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
         .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

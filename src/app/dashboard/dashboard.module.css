@@ -242,6 +242,17 @@
     align-items: center;
     justify-content: space-between;
     gap: 10px;
+    border-radius: 8px;
+    padding: 4px 6px;
+    transition: background 0.15s ease;
+}
+
+.catRowClick {
+    cursor: pointer;
+}
+
+.catRowClick:hover {
+    background: #111;
 }
 
 .catLeft {

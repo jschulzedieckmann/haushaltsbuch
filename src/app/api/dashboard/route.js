@@ -31,7 +31,7 @@ export async function GET() {
         const totalAusgabenAbs = Object.values(catMap).reduce((s, c) => s + c.amount, 0);
         const topCategories = Object.values(catMap)
             .sort((a, b) => b.amount - a.amount)
-            .slice(0, 5)
+            .slice(0, 10)
             .map(c => ({ ...c, share: totalAusgabenAbs > 0 ? (c.amount / totalAusgabenAbs) * 100 : 0 }));
         const { data: recent, error: e3 } = await supabase
             .from('transactions')
