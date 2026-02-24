@@ -173,10 +173,15 @@ function TransaktionenTab({ categories }) {
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
-    const [selectedTx, setSelectedTx] = useState(null);
+    const [selectedTx, setSelectedTx] = useState(null);  // Detail-Modal
+    const [selectedIds, setSelectedIds] = useState(new Set()); // Bulk-Selektion
+    const [bulkCat, setBulkCat] = useState('');
+    const [bulkSaving, setBulkSaving] = useState(false);
+    const [bulkDone, setBulkDone] = useState(false);
 
     function load(p, q) {
         setLoading(true);
+        setSelectedIds(new Set());
         fetch(`/api/transactions?page=${p}&search=${encodeURIComponent(q)}`)
             .then(r => r.json())
             .then(d => { setTxData(d); setLoading(false); })
@@ -185,11 +190,42 @@ function TransaktionenTab({ categories }) {
 
     useEffect(() => { load(page, query); }, [page, query]);
 
-    function handleSearch(e) {
-        e.preventDefault();
-        setPage(1);
-        setQuery(search);
+    function handleSearch(e) { e.preventDefault(); setPage(1); setQuery(search); }
+
+    function toggleId(id) {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+        setBulkDone(false);
     }
+
+    function toggleAll() {
+        const allIds = (txData?.transactions || []).map(t => t.id);
+        if (selectedIds.size === allIds.length) setSelectedIds(new Set());
+        else setSelectedIds(new Set(allIds));
+        setBulkDone(false);
+    }
+
+    async function applyBulk() {
+        if (!bulkCat || selectedIds.size === 0) return;
+        setBulkSaving(true);
+        const catId = bulkCat === '__none__' ? null : bulkCat;
+        await fetch('/api/transactions/bulk', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: [...selectedIds], category_id: catId }),
+        });
+        setBulkSaving(false);
+        setBulkDone(true);
+        setSelectedIds(new Set());
+        setBulkCat('');
+        load(page, query);
+    }
+
+    const allSelected = txData?.transactions?.length > 0 && selectedIds.size === txData.transactions.length;
+    const someSelected = selectedIds.size > 0;
 
     return (
         <div className={styles.tabContent}>
@@ -201,6 +237,34 @@ function TransaktionenTab({ categories }) {
                     onSaved={() => load(page, query)}
                 />
             )}
+
+            {/* Schwebende Action-Bar */}
+            {someSelected && (
+                <div className={styles.bulkBar}>
+                    <span className={styles.bulkCount}>{selectedIds.size} ausgewählt</span>
+                    <select
+                        className={styles.bulkSelect}
+                        value={bulkCat}
+                        onChange={e => { setBulkCat(e.target.value); setBulkDone(false); }}
+                    >
+                        <option value="">— Kategorie wählen —</option>
+                        {(categories || []).map(c => (
+                            <option key={c.category_id} value={c.category_id}>{c.label}</option>
+                        ))}
+                        <option value="__none__">⊘ Keine Kategorie</option>
+                    </select>
+                    <button
+                        className={styles.bulkApplyBtn}
+                        onClick={applyBulk}
+                        disabled={!bulkCat || bulkSaving}
+                    >
+                        {bulkSaving ? 'Speichern…' : 'Zuweisen'}
+                    </button>
+                    {bulkDone && <span className={styles.green} style={{ fontSize: 13 }}>✓ Gespeichert</span>}
+                    <button className={styles.bulkCancelBtn} onClick={() => { setSelectedIds(new Set()); setBulkDone(false); }}>✕</button>
+                </div>
+            )}
+
             <div className={styles.txToolbar}>
                 <form onSubmit={handleSearch} className={styles.searchForm}>
                     <input type="text" className={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)} placeholder="Suche nach Gegenpartei oder Verwendungszweck…" />
@@ -212,11 +276,32 @@ function TransaktionenTab({ categories }) {
             {loading ? <div className={styles.tabLoading}><div className={styles.spinner} /></div> : (
                 <>
                     <div className={styles.txTable}>
-                        <div className={styles.txTableHead}>
+                        <div className={`${styles.txTableHead} ${styles.txTableHeadBulk}`}>
+                            <span>
+                                <input
+                                    type="checkbox"
+                                    className={styles.cbx}
+                                    checked={allSelected}
+                                    onChange={toggleAll}
+                                    title="Alle auswählen"
+                                />
+                            </span>
                             <span>Datum</span><span>Gegenpartei</span><span>Verwendungszweck</span><span>Kategorie</span><span>Betrag</span>
                         </div>
                         {(txData?.transactions || []).map(tx => (
-                            <div key={tx.id} className={`${styles.txTableRow} ${styles.txTableRowClick}`} onClick={() => setSelectedTx({ ...tx, catId: null })}>
+                            <div
+                                key={tx.id}
+                                className={`${styles.txTableRow} ${styles.txTableRowBulk} ${selectedIds.has(tx.id) ? styles.txRowSelected : ''}`}
+                                onClick={() => setSelectedTx({ ...tx, catId: null })}
+                            >
+                                <span onClick={e => { e.stopPropagation(); toggleId(tx.id); }}>
+                                    <input
+                                        type="checkbox"
+                                        className={styles.cbx}
+                                        checked={selectedIds.has(tx.id)}
+                                        onChange={() => toggleId(tx.id)}
+                                    />
+                                </span>
                                 <span className={styles.txDateCell}>{tx.date}</span>
                                 <span className={styles.txCounterCell} title={tx.counterparty}>{tx.counterparty}</span>
                                 <span className={styles.txMemoCell} title={tx.memo}>{tx.memo || '—'}</span>

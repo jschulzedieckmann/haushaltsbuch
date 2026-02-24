@@ -1065,3 +1065,131 @@
     border-radius: 50%;
     flex-shrink: 0;
 }
+
+/* ─── Bulk Tabellen-Layout ─── */
+.txTableHeadBulk {
+    grid-template-columns: 36px 100px 1fr 1fr 120px 110px !important;
+}
+
+.txTableRowBulk {
+    grid-template-columns: 36px 100px 1fr 1fr 120px 110px !important;
+    cursor: pointer;
+}
+
+.txTableRowBulk:hover {
+    background: #0f0f0f;
+}
+
+/* ─── Ausgewählte Zeile ─── */
+.txRowSelected {
+    background: rgba(74, 222, 128, 0.05) !important;
+    border-left: 2px solid #4ade80;
+}
+
+/* ─── Checkbox ─── */
+.cbx {
+    width: 16px;
+    height: 16px;
+    accent-color: #4ade80;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+}
+
+/* ─── Bulk Action-Bar ─── */
+.bulkBar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 68px;
+    z-index: 20;
+    background: rgba(17, 17, 17, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid #4ade8040;
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bulkCount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4ade80;
+    flex-shrink: 0;
+}
+
+.bulkSelect {
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: #d1d5db;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    flex: 1;
+    min-width: 180px;
+    max-width: 280px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.bulkSelect:focus {
+    border-color: #4ade80;
+}
+
+.bulkApplyBtn {
+    background: #4ade80;
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    transition: opacity 0.15s ease;
+}
+
+.bulkApplyBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.bulkApplyBtn:not(:disabled):hover {
+    opacity: 0.85;
+}
+
+.bulkCancelBtn {
+    background: none;
+    border: none;
+    color: #6b7280;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 6px;
+    margin-left: auto;
+    flex-shrink: 0;
+    border-radius: 6px;
+    transition: color 0.15s ease;
+}
+
+.bulkCancelBtn:hover {
+    color: #fff;
+}
