@@ -8,10 +8,10 @@ const SECRET = new TextEncoder().encode(
 export async function POST(request) {
     const { username, password } = await request.json();
 
-    const validUser = process.env.DASHBOARD_USER || 'Julian';
-    const validPass = process.env.DASHBOARD_PASS || '';
+    const validUser = (process.env.DASHBOARD_USER || 'Julian').trim();
+    const validPass = (process.env.DASHBOARD_PASS || '').trim();
 
-    if (username !== validUser || password !== validPass) {
+    if (username.trim() !== validUser || password !== validPass) {
         return NextResponse.json({ error: 'Ungültige Anmeldedaten.' }, { status: 401 });
     }
 
