@@ -1,0 +1,41 @@
+# ===========================================
+# Haushaltsbuch — .gitignore
+# ===========================================
+
+# Secrets — niemals committen
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Temporäre Arbeitsdateien
+.tmp/
+*.log
+
+# Node / Vercel
+node_modules/
+.next/
+.vercel/
+out/
+
+# ING CSV-Exporte (enthalten echte Kontodaten)
+# Nur anonymisierte Samples committen:
+INGDIBA sample.csv
+*.csv
+!**/testdata/*.csv
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
