@@ -1,0 +1,443 @@
+.page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* ─── Header ─── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid #1a1a1a;
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(8, 8, 8, 0.85);
+}
+
+.headerBrand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.headerOrb {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #6ee7b7, #059669, #064e3b);
+    box-shadow: 0 0 14px rgba(74, 222, 128, 0.45);
+}
+
+.headerTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.nav {
+    display: flex;
+    align-items: center;
+    background: #111111;
+    border: 1px solid #222222;
+    border-radius: 100px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.navBtn {
+    padding: 8px 18px;
+    border-radius: 100px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.navBtn:hover {
+    color: #ffffff;
+}
+
+.navActive {
+    background: #ffffff;
+    color: #000000 !important;
+    font-weight: 600;
+}
+
+.headerYear {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    background: #111111;
+    border: 1px solid #222222;
+    padding: 6px 14px;
+    border-radius: 100px;
+}
+
+/* ─── Bento Grid ─── */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto;
+    gap: 14px;
+    padding: 20px 24px 32px;
+    flex: 1;
+}
+
+/* Kachel-Zuweisungen */
+.chartCard {
+    grid-column: 1 / 9;
+}
+
+/* 2/3 Breite */
+.kpiPanel {
+    grid-column: 9 / 13;
+}
+
+/* 1/3 Breite */
+.lineCard {
+    grid-column: 1 / 5;
+}
+
+/* 1/3 */
+.catCard {
+    grid-column: 5 / 9;
+}
+
+/* 1/3 */
+.featureCard {
+    grid-column: 9 / 11;
+}
+
+/* 1/6 */
+.txCard {
+    grid-column: 11 / 13;
+}
+
+/* 1/6 */
+
+/* ─── Card Inhalte ─── */
+.cardHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.cardTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.cardSub {
+    font-size: 11px;
+    color: #4b5563;
+    margin-top: 2px;
+}
+
+/* ─── Legende ─── */
+.legendRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.legendDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.legendLabel {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+/* ─── Charts ─── */
+.chartWrap {
+    height: 240px;
+    position: relative;
+}
+
+.lineWrap {
+    height: 180px;
+    position: relative;
+}
+
+/* ─── KPI Panel ─── */
+.kpiPanel {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpiHero {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.kpiHeroNum {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.kpiGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kpiCard {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #0d0d0d;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #1e1e1e;
+}
+
+.kpiLabel {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+
+.kpiValue {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.kpiSub {
+    font-size: 11px;
+    color: #4b5563;
+}
+
+/* ─── Kategorie-Liste ─── */
+.catList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.catRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.catLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.catDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.catLabel {
+    font-size: 13px;
+    color: #d1d5db;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.catRight {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
+.catAmount {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.catBar {
+    width: 80px;
+    height: 4px;
+    background: #1e1e1e;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.catBarFill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+/* ─── Feature Card ─── */
+.featureCard {
+    background: linear-gradient(135deg, #0a1e14 0%, #0d0d0d 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    min-height: 200px;
+    position: relative;
+}
+
+.featureOrb {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #6ee7b7, #059669, #064e3b);
+    box-shadow: 0 0 30px rgba(74, 222, 128, 0.45), 0 0 60px rgba(74, 222, 128, 0.2);
+    animation: orbPulse 3s ease-in-out infinite;
+}
+
+@keyframes orbPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 30px rgba(74, 222, 128, 0.45), 0 0 60px rgba(74, 222, 128, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 50px rgba(74, 222, 128, 0.65), 0 0 90px rgba(74, 222, 128, 0.3);
+    }
+}
+
+.featureContent {
+    text-align: center;
+    padding-bottom: 4px;
+}
+
+.featureTitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e5e7eb;
+    line-height: 1.3;
+}
+
+.featureSub {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* ─── Transaktions-Liste ─── */
+.txList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    max-height: 320px;
+}
+
+.txRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.txRow:last-child {
+    border-bottom: none;
+}
+
+.txLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.txDate {
+    font-size: 11px;
+    color: #4b5563;
+}
+
+.txCounterparty {
+    font-size: 13px;
+    color: #d1d5db;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+}
+
+.txCat {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 100px;
+    display: inline-block;
+}
+
+.txAmount {
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+/* ─── Farb-Utilities ─── */
+.green {
+    color: #4ade80;
+}
+
+.red {
+    color: #f87171;
+}
+
+/* ─── Loading ─── */
+.loadingScreen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.loadingOrb {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #6ee7b7, #059669, #064e3b);
+    box-shadow: 0 0 40px rgba(74, 222, 128, 0.5);
+    animation: orbPulse 1.5s ease-in-out infinite;
+}
+
+.errorScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f87171;
+    font-size: 14px;
+}

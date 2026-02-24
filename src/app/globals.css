@@ -1,0 +1,126 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ─── Design Tokens ─── */
+:root {
+  --bg-primary:        #080808;
+  --bg-card:           #111111;
+  --bg-card-2:         #161616;
+  --border:            #222222;
+  --border-light:      #2a2a2a;
+
+  --accent-green:      #4ade80;
+  --accent-green-dim:  #166534;
+  --accent-orange:     #f97316;
+  --accent-red:        #ef4444;
+  --accent-blue:       #60a5fa;
+  --accent-purple:     #a78bfa;
+
+  --text-primary:      #ffffff;
+  --text-secondary:    #9ca3af;
+  --text-muted:        #4b5563;
+
+  --badge-pos-bg:      #14532d;
+  --badge-pos-text:    #4ade80;
+  --badge-neg-bg:      #450a0a;
+  --badge-neg-text:    #f87171;
+
+  --radius-card:       18px;
+  --radius-sm:         10px;
+  --gap:               14px;
+  --font:              'Inter', sans-serif;
+}
+
+/* ─── Reset ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 14px;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Radial BG Glow ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(74,222,128,0.07), transparent),
+              radial-gradient(ellipse 60% 40% at 80% 80%, rgba(96,165,250,0.04), transparent);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Card ─── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-1px);
+}
+
+/* ─── Badge ─── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.badge.pos { background: var(--badge-pos-bg); color: var(--badge-pos-text); }
+.badge.neg { background: var(--badge-neg-bg); color: var(--badge-neg-text); }
+
+/* ─── Button ─── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.btn:hover { opacity: 0.85; transform: scale(0.98); }
+.btn.primary { background: var(--accent-green); color: #000; }
+.btn.ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+
+/* ─── Number Highlight ─── */
+.num-xl {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+.num-lg {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.label-sm {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
