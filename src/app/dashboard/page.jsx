@@ -109,21 +109,81 @@ function UploadModal({ onClose, onSuccess }) {
     );
 }
 
+// ─── Transaktion-Detail-Modal ───
+function TxDetailModal({ tx, categories, onClose, onSaved }) {
+    const [savedCatId, setSavedCatId] = useState(tx.catId ?? null);
+    const [saving, setSaving] = useState(false);
+    const fmt = (n) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+
+    async function save(catId) {
+        setSaving(true);
+        await fetch(`/api/transactions/${tx.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category_id: catId }),
+        });
+        setSavedCatId(catId);
+        setSaving(false);
+        onSaved?.();
+    }
+
+    return (
+        <div className={styles.modalOverlay} onClick={onClose}>
+            <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                    <h2 className={styles.modalTitle}>Transaktion</h2>
+                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+                </div>
+                <div className={styles.txDetailGrid}>
+                    <div className={styles.txDetailRow}><span className={styles.txDetailLabel}>Datum</span><span className={styles.txDetailVal}>{tx.date}</span></div>
+                    <div className={styles.txDetailRow}><span className={styles.txDetailLabel}>Gegenpartei</span><span className={styles.txDetailVal}>{tx.counterparty}</span></div>
+                    <div className={styles.txDetailRow}><span className={styles.txDetailLabel}>Verwendungszweck</span><span className={styles.txDetailVal}>{tx.memo || '—'}</span></div>
+                    <div className={styles.txDetailRow}><span className={styles.txDetailLabel}>Betrag</span><span className={`${styles.txDetailVal} ${tx.amount >= 0 ? styles.green : styles.red}`}>{fmt(tx.amount)}</span></div>
+                </div>
+                <div className={styles.txDetailCatSection}>
+                    <p className={styles.txDetailLabel} style={{ marginBottom: 10 }}>Kategorie zuweisen</p>
+                    <div className={styles.catPickerGrid}>
+                        {(categories || []).map(cat => (
+                            <button
+                                key={cat.category_id}
+                                className={`${styles.catPickerBtn} ${savedCatId === cat.category_id ? styles.catPickerActive : ''}`}
+                                style={{ '--pick-color': cat.color_hex }}
+                                onClick={() => save(cat.category_id)}
+                                disabled={saving}
+                            >
+                                <span className={styles.catPickerDot} style={{ background: cat.color_hex }} />
+                                {cat.label}
+                            </button>
+                        ))}
+                        <button className={`${styles.catPickerBtn} ${savedCatId === null ? styles.catPickerActive : ''}`} onClick={() => save(null)} disabled={saving}>
+                            <span className={styles.catPickerDot} style={{ background: '#374151' }} />Keine Kategorie
+                        </button>
+                    </div>
+                    {savedCatId !== undefined && <p className={styles.green} style={{ fontSize: '12px', marginTop: '8px' }}>✓ Gespeichert</p>}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Transaktionen-Tab ───
-function TransaktionenTab() {
+function TransaktionenTab({ categories }) {
     const [txData, setTxData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
+    const [selectedTx, setSelectedTx] = useState(null);
 
-    useEffect(() => {
+    function load(p, q) {
         setLoading(true);
-        fetch(`/api/transactions?page=${page}&search=${encodeURIComponent(query)}`)
+        fetch(`/api/transactions?page=${p}&search=${encodeURIComponent(q)}`)
             .then(r => r.json())
             .then(d => { setTxData(d); setLoading(false); })
             .catch(() => setLoading(false));
-    }, [page, query]);
+    }
+
+    useEffect(() => { load(page, query); }, [page, query]);
 
     function handleSearch(e) {
         e.preventDefault();
@@ -133,15 +193,17 @@ function TransaktionenTab() {
 
     return (
         <div className={styles.tabContent}>
+            {selectedTx && (
+                <TxDetailModal
+                    tx={selectedTx}
+                    categories={categories}
+                    onClose={() => setSelectedTx(null)}
+                    onSaved={() => load(page, query)}
+                />
+            )}
             <div className={styles.txToolbar}>
                 <form onSubmit={handleSearch} className={styles.searchForm}>
-                    <input
-                        type="text"
-                        className={styles.searchInput}
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        placeholder="Suche nach Gegenpartei oder Verwendungszweck…"
-                    />
+                    <input type="text" className={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)} placeholder="Suche nach Gegenpartei oder Verwendungszweck…" />
                     <button type="submit" className={styles.searchBtn}>Suchen</button>
                 </form>
                 {txData && <span className={styles.txCount}>{txData.total.toLocaleString('de-DE')} Buchungen</span>}
@@ -154,7 +216,7 @@ function TransaktionenTab() {
                             <span>Datum</span><span>Gegenpartei</span><span>Verwendungszweck</span><span>Kategorie</span><span>Betrag</span>
                         </div>
                         {(txData?.transactions || []).map(tx => (
-                            <div key={tx.id} className={styles.txTableRow}>
+                            <div key={tx.id} className={`${styles.txTableRow} ${styles.txTableRowClick}`} onClick={() => setSelectedTx({ ...tx, catId: null })}>
                                 <span className={styles.txDateCell}>{tx.date}</span>
                                 <span className={styles.txCounterCell} title={tx.counterparty}>{tx.counterparty}</span>
                                 <span className={styles.txMemoCell} title={tx.memo}>{tx.memo || '—'}</span>
@@ -164,7 +226,7 @@ function TransaktionenTab() {
                                         : <span className={styles.txCatEmpty}>—</span>}
                                 </span>
                                 <span className={`${styles.txAmountCell} ${tx.amount >= 0 ? styles.green : styles.red}`}>
-                                    {fmt(tx.amount)}
+                                    {new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(tx.amount)}
                                 </span>
                             </div>
                         ))}
@@ -182,36 +244,161 @@ function TransaktionenTab() {
     );
 }
 
-// ─── Kategorien-Tab ───
-function KategorienTab() {
-    const [cats, setCats] = useState(null);
+// ─── Neue-Kategorie-Modal ───
+function NeuKategorieModal({ onClose, onSaved }) {
+    const [label, setLabel] = useState('');
+    const [color, setColor] = useState('#60A5FA');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        if (!label.trim()) { setError('Name darf nicht leer sein.'); return; }
+        setSaving(true); setError('');
+        const res = await fetch('/api/categories', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ label: label.trim(), color_hex: color }),
+        });
+        const data = await res.json();
+        if (!res.ok) { setError(data.error || 'Fehler'); setSaving(false); return; }
+        setSaving(false);
+        onSaved?.();
+        onClose();
+    }
+
+    return (
+        <div className={styles.modalOverlay} onClick={onClose}>
+            <div className={styles.modal} style={{ maxWidth: 360 }} onClick={e => e.stopPropagation()}>
+                <div className={styles.modalHeader}>
+                    <h2 className={styles.modalTitle}>Neue Kategorie</h2>
+                    <button className={styles.modalClose} onClick={onClose}>✕</button>
+                </div>
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
+                    <div>
+                        <label className={styles.txDetailLabel}>Name</label>
+                        <input className={styles.searchInput} style={{ width: '100%', marginTop: 6 }} value={label} onChange={e => setLabel(e.target.value)} placeholder="z.B. Fitness" autoFocus />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <label className={styles.txDetailLabel}>Farbe</label>
+                        <input type="color" value={color} onChange={e => setColor(e.target.value)} style={{ width: 44, height: 32, border: 'none', background: 'none', cursor: 'pointer', borderRadius: 6 }} />
+                        <span style={{ fontSize: 12, color: '#6b7280' }}>{color}</span>
+                    </div>
+                    {error && <p className={styles.uploadError}>{error}</p>}
+                    <button type="submit" className={styles.uploadBtn} style={{ width: '100%', padding: '10px 0', marginTop: 4 }} disabled={saving}>
+                        {saving ? 'Speichern…' : 'Kategorie anlegen'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+// ─── Kategorie-Detail-Ansicht ───
+function KategorieDetail({ cat, onBack, onTxClick, categories }) {
+    const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedTx, setSelectedTx] = useState(null);
 
     useEffect(() => {
+        fetch(`/api/categories/${cat.category_id}`)
+            .then(r => r.json())
+            .then(d => { setDetail(d); setLoading(false); });
+    }, [cat.category_id]);
+
+    const fmt = (n) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
+    const maxMonth = detail ? Math.max(...detail.monthlySeries.map(m => m.amount), 1) : 1;
+
+    return (
+        <div className={styles.tabContent}>
+            {selectedTx && (
+                <TxDetailModal
+                    tx={{ ...selectedTx, catId: cat.category_id }}
+                    categories={categories}
+                    onClose={() => setSelectedTx(null)}
+                    onSaved={() => { fetch(`/api/categories/${cat.category_id}`).then(r => r.json()).then(d => setDetail(d)); }}
+                />
+            )}
+            <button className={styles.backBtn} onClick={onBack}>← Alle Kategorien</button>
+
+            {loading ? <div className={styles.tabLoading}><div className={styles.spinner} /></div> : (
+                <>
+                    <div className={styles.catDetailHeader}>
+                        <div className={styles.catDetailDot} style={{ background: cat.color_hex }} />
+                        <div>
+                            <h2 className={styles.catDetailTitle}>{cat.label}</h2>
+                            <p className={styles.catDetailSub}>{detail.summary.count} Transaktionen · {fmt(Math.abs(detail.summary.totalAmount))} gesamt</p>
+                        </div>
+                    </div>
+
+                    {/* Monats-Balken */}
+                    <div className={styles.catDetailChart}>
+                        {detail.monthlySeries.map(m => (
+                            <div key={m.label} className={styles.catDetailBarCol}>
+                                <span className={styles.catDetailBarAmt}>{m.amount > 0 ? `${(m.amount / 1000).toFixed(1)}k` : ''}</span>
+                                <div className={styles.catDetailBar}>
+                                    <div className={styles.catDetailBarFill} style={{ height: `${(m.amount / maxMonth) * 100}%`, background: cat.color_hex }} />
+                                </div>
+                                <span className={styles.catDetailBarLabel}>{m.label}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Transaktionsliste */}
+                    <div className={styles.txTable} style={{ marginTop: 16 }}>
+                        <div className={styles.txTableHead}>
+                            <span>Datum</span><span>Gegenpartei</span><span>Verwendungszweck</span><span></span><span>Betrag</span>
+                        </div>
+                        {(detail.transactions || []).map(tx => (
+                            <div key={tx.id} className={`${styles.txTableRow} ${styles.txTableRowClick}`} onClick={() => setSelectedTx(tx)}>
+                                <span className={styles.txDateCell}>{tx.date}</span>
+                                <span className={styles.txCounterCell}>{tx.counterparty}</span>
+                                <span className={styles.txMemoCell}>{tx.memo || '—'}</span>
+                                <span />
+                                <span className={`${styles.txAmountCell} ${tx.amount >= 0 ? styles.green : styles.red}`}>{fmt(tx.amount)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+// ─── Kategorien-Tab ───
+function KategorienTab({ categories, setCategories }) {
+    const [loading, setLoading] = useState(!categories);
+    const [selected, setSelected] = useState(null);
+    const [showNeu, setShowNeu] = useState(false);
+
+    function loadCats() {
+        setLoading(true);
         fetch('/api/categories')
             .then(r => r.json())
-            .then(d => { setCats(d); setLoading(false); })
+            .then(d => { setCategories(d); setLoading(false); })
             .catch(() => setLoading(false));
-    }, []);
+    }
 
+    useEffect(() => { if (!categories) loadCats(); }, []);
+
+    if (selected) return <KategorieDetail cat={selected} onBack={() => setSelected(null)} categories={categories} />;
     if (loading) return <div className={styles.tabLoading}><div className={styles.spinner} /></div>;
 
     return (
         <div className={styles.tabContent}>
-            <p className={styles.catHint}>
-                💡 Kategorien werden in Supabase verwaltet. Transaktionen erhalten automatisch eine Kategorie sobald eine Zuordnungsregel definiert ist.
-            </p>
-            <div className={styles.catGrid}>
-                {(cats || []).map(cat => (
-                    <div key={cat.category_id} className={styles.catGridCard}>
+            {showNeu && <NeuKategorieModal onClose={() => setShowNeu(false)} onSaved={loadCats} />}
+            <div className={styles.catTabToolbar}>
+                <p className={styles.catHint} style={{ margin: 0 }}>💡 Kategorie anklicken für Detailansicht &amp; Transaktionen</p>
+                <button className={styles.uploadBtn} onClick={() => setShowNeu(true)}>+ Neue Kategorie</button>
+            </div>
+            <div className={styles.catGrid} style={{ marginTop: 16 }}>
+                {(categories || []).map(cat => (
+                    <div key={cat.category_id} className={`${styles.catGridCard} ${styles.catGridCardClick}`} onClick={() => setSelected(cat)}>
                         <div className={styles.catGridDot} style={{ background: cat.color_hex || '#9CA3AF' }} />
-                        <div>
+                        <div style={{ flex: 1 }}>
                             <p className={styles.catGridLabel}>{cat.label}</p>
-                            {cat.parent_id && <p className={styles.catGridParent}>Unterkategorie</p>}
                         </div>
-                        <div className={styles.catGridActive} style={{ color: cat.active ? '#4ade80' : '#ef4444' }}>
-                            {cat.active ? '● Aktiv' : '○ Inaktiv'}
-                        </div>
+                        <span style={{ fontSize: 14, color: '#374151' }}>›</span>
                     </div>
                 ))}
             </div>
@@ -339,6 +526,7 @@ function UebersichtTab({ data }) {
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState('uebersicht');
     const [dashData, setDashData] = useState(null);
+    const [categories, setCategories] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showUpload, setShowUpload] = useState(false);
@@ -351,7 +539,10 @@ export default function DashboardPage() {
             .catch(() => { setError('Daten konnten nicht geladen werden.'); setLoading(false); });
     }
 
-    useEffect(() => { loadDashboard(); }, []);
+    useEffect(() => {
+        loadDashboard();
+        fetch('/api/categories').then(r => r.json()).then(setCategories);
+    }, []);
 
     if (loading) return (
         <div className={styles.loadingScreen}>
@@ -382,8 +573,8 @@ export default function DashboardPage() {
             </header>
 
             {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} />}
-            {activeTab === 'transaktionen' && <TransaktionenTab />}
-            {activeTab === 'kategorien' && <KategorienTab />}
+            {activeTab === 'transaktionen' && <TransaktionenTab categories={categories} />}
+            {activeTab === 'kategorien' && <KategorienTab categories={categories} setCategories={setCategories} />}
         </div>
     );
 }

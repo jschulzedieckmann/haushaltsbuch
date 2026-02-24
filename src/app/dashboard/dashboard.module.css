@@ -849,3 +849,208 @@
     justify-content: center;
     padding: 60px;
 }
+
+/* ─── Kategorie-Tab Toolbar ─── */
+.catTabToolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.catGridCardClick {
+    cursor: pointer;
+}
+
+.catGridCardClick:hover {
+    border-color: #4ade80;
+    background: #131313;
+}
+
+/* ─── Back Button ─── */
+.backBtn {
+    background: none;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 7px 14px;
+    color: #9ca3af;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 20px;
+    transition: all 0.15s ease;
+}
+
+.backBtn:hover {
+    border-color: #4ade80;
+    color: #fff;
+}
+
+/* ─── Kategorie Detail ─── */
+.catDetailHeader {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.catDetailDot {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
+.catDetailTitle {
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.catDetailSub {
+    font-size: 13px;
+    color: #6b7280;
+    margin-top: 3px;
+}
+
+/* ─── Monats-Balkendiagramm ─── */
+.catDetailChart {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    height: 140px;
+    padding: 0 4px 0;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.catDetailBarCol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    gap: 4px;
+    height: 100%;
+}
+
+.catDetailBarAmt {
+    font-size: 9px;
+    color: #4b5563;
+    height: 14px;
+    line-height: 14px;
+}
+
+.catDetailBar {
+    flex: 1;
+    width: 100%;
+    background: #1a1a1a;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-end;
+}
+
+.catDetailBarFill {
+    width: 100%;
+    border-radius: 4px 4px 0 0;
+    transition: height 0.4s ease;
+    min-height: 2px;
+}
+
+.catDetailBarLabel {
+    font-size: 9px;
+    color: #4b5563;
+    text-align: center;
+    padding-top: 4px;
+}
+
+/* ─── Klikkkbare Tabellenzeile ─── */
+.txTableRowClick {
+    cursor: pointer;
+}
+
+.txTableRowClick:hover {
+    background: #141414 !important;
+}
+
+/* ─── Transaktion Detail Modal ─── */
+.txDetailGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.txDetailRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.txDetailLabel {
+    font-size: 11px;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.txDetailVal {
+    font-size: 13px;
+    color: #e5e7eb;
+    text-align: right;
+    word-break: break-word;
+}
+
+.txDetailCatSection {
+    margin-top: 4px;
+}
+
+/* ─── Kategorie-Picker ─── */
+.catPickerGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.catPickerBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 100px;
+    padding: 5px 12px;
+    color: #9ca3af;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+
+.catPickerBtn:hover:not(:disabled) {
+    border-color: var(--pick-color, #4ade80);
+    color: #fff;
+}
+
+.catPickerActive {
+    border-color: var(--pick-color, #4ade80) !important;
+    color: #fff !important;
+    background: color-mix(in srgb, var(--pick-color, #4ade80) 10%, #111) !important;
+}
+
+.catPickerDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
