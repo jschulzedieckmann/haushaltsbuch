@@ -632,19 +632,25 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showUpload, setShowUpload] = useState(false);
+    const [year, setYear] = useState(new Date().getFullYear());
 
-    function loadDashboard() {
+    function loadDashboard(y) {
         setLoading(true);
-        fetch('/api/dashboard')
+        fetch(`/api/dashboard?year=${y || year}`)
             .then(r => r.json())
             .then(d => { setDashData(d); setLoading(false); })
             .catch(() => { setError('Daten konnten nicht geladen werden.'); setLoading(false); });
     }
 
     useEffect(() => {
-        loadDashboard();
+        loadDashboard(year);
         fetch('/api/categories').then(r => r.json()).then(setCategories);
     }, []);
+
+    function changeYear(y) {
+        setYear(y);
+        loadDashboard(y);
+    }
 
     if (loading) return (
         <div className={styles.loadingScreen}>
@@ -654,9 +660,11 @@ export default function DashboardPage() {
     );
     if (error) return <div className={styles.errorScreen}>{error}</div>;
 
+    const availableYears = dashData?.availableYears || [year];
+
     return (
         <div className={styles.page}>
-            {showUpload && <UploadModal onClose={() => setShowUpload(false)} onSuccess={() => { setShowUpload(false); loadDashboard(); }} />}
+            {showUpload && <UploadModal onClose={() => setShowUpload(false)} onSuccess={() => { setShowUpload(false); loadDashboard(year); }} />}
 
             <header className={styles.header}>
                 <div className={styles.headerBrand}>
@@ -670,7 +678,16 @@ export default function DashboardPage() {
                 </nav>
                 <div className={styles.headerRight}>
                     <button className={styles.uploadBtn} onClick={() => setShowUpload(true)}>⬆ CSV Import</button>
-                    <span className={styles.headerYear}>2025</span>
+                    <select
+                        className={styles.yearSelect}
+                        value={year}
+                        onChange={e => changeYear(Number(e.target.value))}
+                        title="Jahresfilter"
+                    >
+                        {availableYears.map(y => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
                 </div>
             </header>
 

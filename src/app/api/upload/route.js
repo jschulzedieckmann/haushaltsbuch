@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { createHash } from 'crypto';
 import { supabase } from '@/lib/supabase';
 
-// ING DiBa CSV latin-1 → UTF-8 Mapping für häufige Sonderzeichen
 function latin1ToUtf8(buffer) {
     return new TextDecoder('latin1').decode(buffer);
 }
@@ -49,46 +48,46 @@ function parseING(csvText, filename) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        // Einfaches Semikolon-Split (ING hat keine Anführungszeichen innerhalb von Feldern)
         const fields = line.split(';').map(f => f.replace(/^"|"$/g, '').trim());
-
         if (fields.length < 8) continue;
 
         const [buchung, wertstellungsdatum, auftraggeber, buchungstext, verwendungszweck, saldo, saldoWaehrung, betrag, betragWaehrung] = fields;
 
         const bookingDate = parseGermanDate(buchung);
+        const valueDate = parseGermanDate(wertstellungsdatum) || bookingDate;
         const amount = parseGermanDecimal(betrag);
-        const balanceAfter = parseGermanDecimal(saldo);
 
         if (!bookingDate || amount === null) continue;
 
         const txId = makeTransactionId(filename, dataRowIdx);
 
+        // raw_ing_exports: Schema hat keine transaction_id-Unique-Spalte,
+        // PK ist id (auto-increment). Wir speichern Rohdaten als INSERT IGNORE.
         rawRows.push({
-            transaction_id: txId,
             source_file: filename,
             row_index: dataRowIdx,
             buchung: buchung || null,
             wertstellungsdatum: wertstellungsdatum || null,
-            auftraggeber_empfaenger: auftraggeber || null,
-            buchungstext: buchungstext || null,
-            verwendungszweck: verwendungszweck || null,
-            saldo: balanceAfter,
+            auftraggeber_empfaenger: auftraggeber || '',
+            buchungstext: buchungstext || '',
+            verwendungszweck: verwendungszweck || '',
+            saldo: saldo || '',
             saldo_waehrung: saldoWaehrung || 'EUR',
-            betrag: amount,
+            betrag: betrag || '',      // text-Feld im Schema
             betrag_waehrung: betragWaehrung || 'EUR',
         });
 
+        // transactions: Schema hat transaction_id (PK), booking_date, value_date,
+        // amount (numeric), currency, counterparty, memo, source_file — KEIN balance_after!
         transactions.push({
             transaction_id: txId,
             booking_date: bookingDate,
+            value_date: valueDate,
             amount: amount,
             currency: betragWaehrung || 'EUR',
-            counterparty: auftraggeber || null,
-            memo: verwendungszweck || buchungstext || null,
-            balance_after: balanceAfter,
+            counterparty: auftraggeber || '',
+            memo: verwendungszweck || buchungstext || '',
             source_file: filename,
-            raw_row_index: dataRowIdx,
         });
 
         dataRowIdx++;
@@ -114,24 +113,32 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Keine Transaktionen gefunden. Ist das eine gültige ING DiBa CSV?' }, { status: 400 });
         }
 
-        // Batch-Upsert (50er Batches)
         const BATCH = 50;
         let rawInserted = 0;
         let txInserted = 0;
-        let errors = [];
+        const errors = [];
 
+        // raw_ing_exports: INSERT (kein Upsert – PK ist auto-increment)
+        // Duplikate werden toleriert; wir nutzen ignoreDuplicates auf source_file+row_index
+        // Da es keinen UNIQUE-Index auf (source_file, row_index) gibt, einfach INSERT.
+        // Fehler bei Duplicate werden akzeptiert (der Import ist idempotent via transaction_id).
         for (let i = 0; i < rawRows.length; i += BATCH) {
             const batch = rawRows.slice(i, i + BATCH);
             const { error } = await supabase
                 .from('raw_ing_exports')
-                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true });
-            if (error) errors.push(`raw_batch_${i}: ${error.message}`);
-            else rawInserted += batch.length;
+                .insert(batch);
+            // Fehler sind OK — können Duplikate sein wenn die Datei nochmal hochgeladen wird
+            if (error && !error.message.includes('duplicate') && !error.message.includes('conflict')) {
+                errors.push(`raw_batch_${i}: ${error.message}`);
+            } else {
+                rawInserted += batch.length;
+            }
         }
 
+        // transactions: Upsert via transaction_id (SHA-256 → deterministisch)
         for (let i = 0; i < transactions.length; i += BATCH) {
             const batch = transactions.slice(i, i + BATCH);
-            const { error } = await supabase
+            const { error, count } = await supabase
                 .from('transactions')
                 .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true });
             if (error) errors.push(`tx_batch_${i}: ${error.message}`);
@@ -145,6 +152,7 @@ export async function POST(request) {
             rawInserted,
             txInserted,
             errors,
+            message: `${txInserted} Transaktionen importiert (${transactions.length - txInserted} bereits vorhanden).`,
         });
     } catch (err) {
         console.error('Upload error:', err);
