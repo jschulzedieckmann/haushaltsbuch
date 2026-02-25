@@ -380,16 +380,18 @@ function NeuKategorieModal({ onClose, onSaved }) {
 }
 
 // ─── Kategorie-Detail-Ansicht ───
-function KategorieDetail({ cat, onBack, onTxClick, categories }) {
+function KategorieDetail({ cat, onBack, categories, year }) {
     const [detail, setDetail] = useState(null);
     const [loading, setLoading] = useState(true);
     const [selectedTx, setSelectedTx] = useState(null);
 
-    useEffect(() => {
-        fetch(`/api/categories/${cat.category_id}`)
+    function loadDetail() {
+        fetch(`/api/categories/${cat.category_id}?year=${year}`)
             .then(r => r.json())
             .then(d => { setDetail(d); setLoading(false); });
-    }, [cat.category_id]);
+    }
+
+    useEffect(() => { loadDetail(); }, [cat.category_id, year]);
 
     const fmt = (n) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
     const maxMonth = detail ? Math.max(...detail.monthlySeries.map(m => m.amount), 1) : 1;
@@ -401,10 +403,10 @@ function KategorieDetail({ cat, onBack, onTxClick, categories }) {
                     tx={{ ...selectedTx, catId: cat.category_id }}
                     categories={categories}
                     onClose={() => setSelectedTx(null)}
-                    onSaved={() => { fetch(`/api/categories/${cat.category_id}`).then(r => r.json()).then(d => setDetail(d)); }}
+                    onSaved={() => loadDetail()}
                 />
             )}
-            <button className={styles.backBtn} onClick={onBack}>← Alle Kategorien</button>
+            <button className={styles.backBtn} onClick={onBack}>← Alle Kategorien ({year})</button>
 
             {loading ? <div className={styles.tabLoading}><div className={styles.spinner} /></div> : (
                 <>
@@ -451,7 +453,7 @@ function KategorieDetail({ cat, onBack, onTxClick, categories }) {
 }
 
 // ─── Kategorien-Tab ───
-function KategorienTab({ categories, setCategories }) {
+function KategorienTab({ categories, setCategories, year }) {
     const [loading, setLoading] = useState(!categories);
     const [selected, setSelected] = useState(null);
     const [showNeu, setShowNeu] = useState(false);
@@ -466,7 +468,7 @@ function KategorienTab({ categories, setCategories }) {
 
     useEffect(() => { if (!categories) loadCats(); }, []);
 
-    if (selected) return <KategorieDetail cat={selected} onBack={() => setSelected(null)} categories={categories} />;
+    if (selected) return <KategorieDetail cat={selected} onBack={() => setSelected(null)} categories={categories} year={year} />;
     if (loading) return <div className={styles.tabLoading}><div className={styles.spinner} /></div>;
 
     return (
@@ -558,7 +560,7 @@ function MonatsKachel({ cashflowSeries, year }) {
 }
 
 // ─── Übersicht-Tab ───
-function UebersichtTab({ data, categories }) {
+function UebersichtTab({ data, categories, year }) {
     const { summary, cashflowSeries, topCategories, recentTransactions } = data;
     const labels = cashflowSeries.map(m => m.label);
     const [selectedCat, setSelectedCat] = useState(null);
@@ -601,7 +603,7 @@ function UebersichtTab({ data, categories }) {
             {selectedCat && (
                 <div className={styles.modalOverlay} onClick={() => setSelectedCat(null)}>
                     <div style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: 20, width: '100%', maxWidth: 800, maxHeight: '85vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
-                        <KategorieDetail cat={selectedCat} onBack={() => setSelectedCat(null)} categories={categories} />
+                        <KategorieDetail cat={selectedCat} onBack={() => setSelectedCat(null)} categories={categories} year={year} />
                     </div>
                 </div>
             )}
@@ -609,7 +611,7 @@ function UebersichtTab({ data, categories }) {
             {/* Balkendiagramm */}
             <div className={`card ${styles.chartCard}`}>
                 <div className={styles.cardHeader}>
-                    <div><h2 className={styles.cardTitle}>Einnahmen &amp; Ausgaben</h2><p className={styles.cardSub}>Monatsübersicht 2025</p></div>
+                    <div><h2 className={styles.cardTitle}>Einnahmen &amp; Ausgaben</h2><p className={styles.cardSub}>Monatsübersicht {year}</p></div>
                     <div className={styles.legendRow}>
                         <span className={styles.legendDot} style={{ background: '#4ade80' }} /><span className={styles.legendLabel}>Einnahmen</span>
                         <span className={styles.legendDot} style={{ background: '#f97316' }} /><span className={styles.legendLabel}>Ausgaben</span>
@@ -620,7 +622,7 @@ function UebersichtTab({ data, categories }) {
 
             {/* KPI Panel */}
             <div className={`card ${styles.kpiPanel}`}>
-                <div className={styles.cardHeader}><h2 className={styles.cardTitle}>Jahresbilanz 2025</h2></div>
+                <div className={styles.cardHeader}><h2 className={styles.cardTitle}>Jahresbilanz {year}</h2></div>
                 <div className={styles.kpiHero}>
                     <span className={`${styles.kpiHeroNum} ${nettoPositiv ? styles.green : styles.red}`}>{fmt(summary.netto)}</span>
                     <span className={`badge ${nettoPositiv ? 'pos' : 'neg'}`}>{nettoPositiv ? '▲' : '▼'} Netto</span>
@@ -743,9 +745,9 @@ export default function DashboardPage() {
                 </div>
             </header>
 
-            {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} categories={categories} />}
+            {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} categories={categories} year={year} />}
             {activeTab === 'transaktionen' && <TransaktionenTab categories={categories} />}
-            {activeTab === 'kategorien' && <KategorienTab categories={categories} setCategories={setCategories} />}
+            {activeTab === 'kategorien' && <KategorienTab categories={categories} setCategories={setCategories} year={year} />}
         </div>
     );
 }
