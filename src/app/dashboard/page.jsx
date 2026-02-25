@@ -395,6 +395,7 @@ function KategorieDetail({ cat, onBack, categories, year }) {
 
     const fmt = (n) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n);
     const maxMonth = detail ? Math.max(...detail.monthlySeries.map(m => m.amount), 1) : 1;
+    const [hoveredBar, setHoveredBar] = useState(null);
 
     return (
         <div className={styles.tabContent}>
@@ -418,13 +419,30 @@ function KategorieDetail({ cat, onBack, categories, year }) {
                         </div>
                     </div>
 
-                    {/* Monats-Balken */}
+                    {/* Monats-Balken mit Hover-Tooltip */}
                     <div className={styles.catDetailChart}>
-                        {detail.monthlySeries.map(m => (
-                            <div key={m.label} className={styles.catDetailBarCol}>
-                                <span className={styles.catDetailBarAmt}>{m.amount > 0 ? `${(m.amount / 1000).toFixed(1)}k` : ''}</span>
+                        {detail.monthlySeries.map((m, i) => (
+                            <div
+                                key={m.label}
+                                className={styles.catDetailBarCol}
+                                style={{ position: 'relative' }}
+                                onMouseEnter={() => setHoveredBar(i)}
+                                onMouseLeave={() => setHoveredBar(null)}
+                            >
+                                {hoveredBar === i && m.amount > 0 && (
+                                    <div className={styles.barTooltip}>
+                                        {fmt(m.amount)}
+                                    </div>
+                                )}
                                 <div className={styles.catDetailBar}>
-                                    <div className={styles.catDetailBarFill} style={{ height: `${(m.amount / maxMonth) * 100}%`, background: cat.color_hex }} />
+                                    <div
+                                        className={styles.catDetailBarFill}
+                                        style={{
+                                            height: `${(m.amount / maxMonth) * 100}%`,
+                                            background: hoveredBar === i ? '#fff' : cat.color_hex,
+                                            transition: 'background 0.15s ease',
+                                        }}
+                                    />
                                 </div>
                                 <span className={styles.catDetailBarLabel}>{m.label}</span>
                             </div>
@@ -687,6 +705,7 @@ export default function DashboardPage() {
     const [error, setError] = useState('');
     const [showUpload, setShowUpload] = useState(false);
     const [year, setYear] = useState(new Date().getFullYear());
+    const [refreshKey, setRefreshKey] = useState(0);
 
     function loadDashboard(y) {
         setLoading(true);
@@ -727,7 +746,15 @@ export default function DashboardPage() {
                 </div>
                 <nav className={styles.nav}>
                     {[['uebersicht', 'Übersicht'], ['transaktionen', 'Transaktionen'], ['kategorien', 'Kategorien']].map(([id, label]) => (
-                        <button key={id} className={`${styles.navBtn} ${activeTab === id ? styles.navActive : ''}`} onClick={() => setActiveTab(id)}>{label}</button>
+                        <button
+                            key={id}
+                            className={`${styles.navBtn} ${activeTab === id ? styles.navActive : ''}`}
+                            onClick={() => {
+                                setActiveTab(id);
+                                if (id === 'uebersicht') loadDashboard(year);
+                                if (id === 'kategorien') setRefreshKey(k => k + 1);
+                            }}
+                        >{label}</button>
                     ))}
                 </nav>
                 <div className={styles.headerRight}>
@@ -747,7 +774,7 @@ export default function DashboardPage() {
 
             {activeTab === 'uebersicht' && dashData && <UebersichtTab data={dashData} categories={categories} year={year} />}
             {activeTab === 'transaktionen' && <TransaktionenTab categories={categories} />}
-            {activeTab === 'kategorien' && <KategorienTab categories={categories} setCategories={setCategories} year={year} />}
+            {activeTab === 'kategorien' && <KategorienTab key={refreshKey} categories={categories} setCategories={setCategories} year={year} />}
         </div>
     );
 }
