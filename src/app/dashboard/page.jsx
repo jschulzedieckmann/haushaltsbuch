@@ -513,8 +513,6 @@ function KategorienTab({ categories, setCategories, year }) {
 
 // ─── Monats-Kachel ───
 function MonatsKachel({ cashflowSeries, year }) {
-    const now = new Date();
-    // Letzter Monat mit Daten (oder aktueller Monat)
     const lastDataIdx = cashflowSeries.reduce((last, m, i) => {
         if (m.einnahmen > 0 || m.ausgaben > 0) return i;
         return last;
@@ -534,19 +532,9 @@ function MonatsKachel({ cashflowSeries, year }) {
                 <span className={styles.cardSub}>{year}</span>
             </div>
             <div className={styles.monthNav}>
-                <button
-                    className={styles.monthNavBtn}
-                    onClick={() => setIdx(i => i - 1)}
-                    disabled={idx === 0}
-                    title="Vorheriger Monat"
-                >←</button>
+                <button className={styles.monthNavBtn} onClick={() => setIdx(i => i - 1)} disabled={idx === 0} title="Vorheriger Monat">←</button>
                 <span className={styles.monthTitle}>{month.label}</span>
-                <button
-                    className={styles.monthNavBtn}
-                    onClick={() => setIdx(i => i + 1)}
-                    disabled={idx === cashflowSeries.length - 1}
-                    title="Nächster Monat"
-                >→</button>
+                <button className={styles.monthNavBtn} onClick={() => setIdx(i => i + 1)} disabled={idx === cashflowSeries.length - 1} title="Nächster Monat">→</button>
             </div>
             <div className={styles.monthRows}>
                 <div className={styles.monthRow}>
@@ -573,9 +561,36 @@ function MonatsKachel({ cashflowSeries, year }) {
                     <span className={`${styles.monthNettoValue} ${nettoPos ? styles.green : styles.red}`}>{fmt(netto)}</span>
                 </div>
             </div>
+
+            {/* Top 5 Ausgaben */}
+            {(month.topAusgaben?.length > 0) && (
+                <div className={styles.monthTop5}>
+                    <p className={styles.monthTop5Title} style={{ color: '#f97316' }}>▼ Top Ausgaben</p>
+                    {month.topAusgaben.map((t, i) => (
+                        <div key={i} className={styles.monthTop5Row}>
+                            <span className={styles.monthTop5Label} title={t.memo || t.label}>{t.label}</span>
+                            <span className={`${styles.monthTop5Amt} ${styles.red}`}>{fmt(t.amount)}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Top 5 Einnahmen */}
+            {(month.topEinnahmen?.length > 0) && (
+                <div className={styles.monthTop5} style={{ marginTop: 8 }}>
+                    <p className={styles.monthTop5Title} style={{ color: '#4ade80' }}>▲ Top Einnahmen</p>
+                    {month.topEinnahmen.map((t, i) => (
+                        <div key={i} className={styles.monthTop5Row}>
+                            <span className={styles.monthTop5Label} title={t.memo || t.label}>{t.label}</span>
+                            <span className={`${styles.monthTop5Amt} ${styles.green}`}>{fmt(t.amount)}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
+
 
 // ─── Übersicht-Tab ───
 function UebersichtTab({ data, categories, year }) {

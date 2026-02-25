@@ -4,12 +4,11 @@ import { supabase } from '@/lib/supabase';
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url);
-        // Jahr aus Query-Param, Standard: aktuelles Jahr
         const year = parseInt(searchParams.get('year') || new Date().getFullYear());
         const yearStart = `${year}-01-01`;
         const yearEnd = `${year}-12-31`;
 
-        // 1. Ausgaben nach Kategorie/Gegenpartei
+        // 1. Ausgaben nach Kategorie/Gegenpartei (Jahresübersicht)
         const { data: ausgabenTx } = await supabase
             .from('transactions')
             .select('category_id, counterparty, amount, categories(label, color_hex)')
@@ -53,42 +52,53 @@ export async function GET(request) {
         const ausgaben = (totals || []).filter(t => t.amount < 0).reduce((s, t) => s + Number(t.amount), 0);
         const netto = einnahmen + ausgaben;
 
-        // 4. Monatlicher Cashflow für gewähltes Jahr
+        // 4. Monatlicher Cashflow + Top-5-Buchungen pro Monat
         const { data: allTx } = await supabase
             .from('transactions')
-            .select('booking_date, amount')
+            .select('booking_date, amount, counterparty, memo, categories(label)')
             .gte('booking_date', yearStart)
-            .lte('booking_date', yearEnd);
+            .lte('booking_date', yearEnd)
+            .order('booking_date', { ascending: false });
 
         const months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
         const monthlyMap = {};
-        months.forEach((m, i) => { monthlyMap[i + 1] = { label: m, einnahmen: 0, ausgaben: 0 }; });
+        months.forEach((m, i) => {
+            monthlyMap[i + 1] = { label: m, einnahmen: 0, ausgaben: 0, topAusgaben: [], topEinnahmen: [] };
+        });
 
         (allTx || []).forEach(t => {
             const month = new Date(t.booking_date).getMonth() + 1;
             const amt = Number(t.amount);
-            if (amt > 0) monthlyMap[month].einnahmen += amt;
-            else monthlyMap[month].ausgaben += Math.abs(amt);
+            const entry = {
+                date: t.booking_date,
+                amount: amt,
+                label: t.categories?.label || t.counterparty || '—',
+                memo: t.memo || '',
+            };
+            if (amt > 0) {
+                monthlyMap[month].einnahmen += amt;
+                monthlyMap[month].topEinnahmen.push(entry);
+            } else {
+                monthlyMap[month].ausgaben += Math.abs(amt);
+                monthlyMap[month].topAusgaben.push(entry);
+            }
         });
 
-        const cashflowSeries = Object.values(monthlyMap);
+        // Sortieren und auf Top 5 kürzen
+        const cashflowSeries = Object.values(monthlyMap).map(m => ({
+            label: m.label,
+            einnahmen: m.einnahmen,
+            ausgaben: m.ausgaben,
+            topAusgaben: m.topAusgaben.sort((a, b) => a.amount - b.amount).slice(0, 5),
+            topEinnahmen: m.topEinnahmen.sort((a, b) => b.amount - a.amount).slice(0, 5),
+        }));
 
-        // 5. Verfügbare Jahre aus der Datenbank ermitteln
-        const { data: yearRows } = await supabase
-            .from('transactions')
-            .select('booking_date')
-            .order('booking_date', { ascending: true })
-            .limit(1);
-        const { data: yearRowsEnd } = await supabase
-            .from('transactions')
-            .select('booking_date')
-            .order('booking_date', { ascending: false })
-            .limit(1);
+        // 5. Verfügbare Jahre ermitteln
+        const { data: yearRows } = await supabase.from('transactions').select('booking_date').order('booking_date', { ascending: true }).limit(1);
+        const { data: yearRowsEnd } = await supabase.from('transactions').select('booking_date').order('booking_date', { ascending: false }).limit(1);
 
-        const minYear = yearRows?.[0]?.booking_date
-            ? new Date(yearRows[0].booking_date).getFullYear() : year;
-        const maxYear = yearRowsEnd?.[0]?.booking_date
-            ? new Date(yearRowsEnd[0].booking_date).getFullYear() : year;
+        const minYear = yearRows?.[0]?.booking_date ? new Date(yearRows[0].booking_date).getFullYear() : year;
+        const maxYear = yearRowsEnd?.[0]?.booking_date ? new Date(yearRowsEnd[0].booking_date).getFullYear() : year;
         const availableYears = [];
         for (let y = maxYear; y >= minYear; y--) availableYears.push(y);
 
