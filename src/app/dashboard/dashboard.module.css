@@ -98,7 +98,7 @@
     grid-column: 1 / 9;
 }
 
-/* 2/3 Breite */
+/* 1/3 Breite */
 .kpiPanel {
     grid-column: 9 / 13;
 }
@@ -113,17 +113,22 @@
     grid-column: 5 / 9;
 }
 
-/* 1/3 */
+/* 2/12 */
 .featureCard {
     grid-column: 9 / 11;
+}
+
+/* 2/12 – Monatsübersicht */
+.monthCard {
+    grid-column: 11 / 13;
 }
 
 /* 1/6 */
 .txCard {
     grid-column: 11 / 13;
+    display: none;
+    /* ersetzt durch monthCard + featureCard */
 }
-
-/* 1/6 */
 
 /* ─── Card Inhalte ─── */
 .cardHeader {
@@ -878,6 +883,122 @@
     align-items: center;
     justify-content: center;
     padding: 60px;
+}
+
+/* ─── Monatsübersicht-Kachel ─── */
+.monthNav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 6px;
+}
+
+.monthNavBtn {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.monthNavBtn:hover:not(:disabled) {
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+.monthNavBtn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.monthTitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e5e7eb;
+    text-align: center;
+    flex: 1;
+    letter-spacing: 0.02em;
+}
+
+.monthRows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.monthRow {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.monthRowTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.monthRowLabel {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+
+.monthRowValue {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.monthBar {
+    height: 4px;
+    background: #1e1e1e;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.monthBarFill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+
+.monthDivider {
+    height: 1px;
+    background: #1e1e1e;
+    margin: 4px 0;
+}
+
+.monthNettoRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 2px;
+}
+
+.monthNettoLabel {
+    font-size: 11px;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+
+.monthNettoValue {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 /* ─── Kategorie-Tab Toolbar ─── */

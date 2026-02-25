@@ -491,6 +491,72 @@ function KategorienTab({ categories, setCategories }) {
     );
 }
 
+// ─── Monats-Kachel ───
+function MonatsKachel({ cashflowSeries, year }) {
+    const now = new Date();
+    // Letzter Monat mit Daten (oder aktueller Monat)
+    const lastDataIdx = cashflowSeries.reduce((last, m, i) => {
+        if (m.einnahmen > 0 || m.ausgaben > 0) return i;
+        return last;
+    }, 0);
+    const [idx, setIdx] = useState(lastDataIdx);
+    const month = cashflowSeries[idx];
+
+    const maxEin = Math.max(...cashflowSeries.map(m => m.einnahmen), 1);
+    const maxAus = Math.max(...cashflowSeries.map(m => m.ausgaben), 1);
+    const netto = month.einnahmen - month.ausgaben;
+    const nettoPos = netto >= 0;
+
+    return (
+        <div className={`card ${styles.monthCard}`}>
+            <div className={styles.cardHeader} style={{ marginBottom: 0 }}>
+                <h2 className={styles.cardTitle}>Monatsübersicht</h2>
+                <span className={styles.cardSub}>{year}</span>
+            </div>
+            <div className={styles.monthNav}>
+                <button
+                    className={styles.monthNavBtn}
+                    onClick={() => setIdx(i => i - 1)}
+                    disabled={idx === 0}
+                    title="Vorheriger Monat"
+                >←</button>
+                <span className={styles.monthTitle}>{month.label}</span>
+                <button
+                    className={styles.monthNavBtn}
+                    onClick={() => setIdx(i => i + 1)}
+                    disabled={idx === cashflowSeries.length - 1}
+                    title="Nächster Monat"
+                >→</button>
+            </div>
+            <div className={styles.monthRows}>
+                <div className={styles.monthRow}>
+                    <div className={styles.monthRowTop}>
+                        <span className={styles.monthRowLabel}>Einnahmen</span>
+                        <span className={`${styles.monthRowValue} ${styles.green}`}>{fmt(month.einnahmen)}</span>
+                    </div>
+                    <div className={styles.monthBar}>
+                        <div className={styles.monthBarFill} style={{ width: `${(month.einnahmen / maxEin) * 100}%`, background: '#4ade80' }} />
+                    </div>
+                </div>
+                <div className={styles.monthRow}>
+                    <div className={styles.monthRowTop}>
+                        <span className={styles.monthRowLabel}>Ausgaben</span>
+                        <span className={`${styles.monthRowValue} ${styles.red}`}>{fmt(month.ausgaben)}</span>
+                    </div>
+                    <div className={styles.monthBar}>
+                        <div className={styles.monthBarFill} style={{ width: `${(month.ausgaben / maxAus) * 100}%`, background: '#f97316' }} />
+                    </div>
+                </div>
+                <div className={styles.monthDivider} />
+                <div className={styles.monthNettoRow}>
+                    <span className={styles.monthNettoLabel}>Netto</span>
+                    <span className={`${styles.monthNettoValue} ${nettoPos ? styles.green : styles.red}`}>{fmt(netto)}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Übersicht-Tab ───
 function UebersichtTab({ data, categories }) {
     const { summary, cashflowSeries, topCategories, recentTransactions } = data;
@@ -604,22 +670,8 @@ function UebersichtTab({ data, categories }) {
                 </div>
             </div>
 
-            {/* Letzte Buchungen */}
-            <div className={`card ${styles.txCard}`}>
-                <div className={styles.cardHeader}><h2 className={styles.cardTitle}>Letzte Buchungen</h2></div>
-                <div className={styles.txList}>
-                    {recentTransactions.map(tx => (
-                        <div key={tx.id} className={styles.txRow}>
-                            <div className={styles.txLeft}>
-                                <span className={styles.txDate}>{tx.date}</span>
-                                <span className={styles.txCounterparty}>{tx.counterparty}</span>
-                                {tx.categoryLabel && <span className={styles.txCat} style={{ background: tx.categoryColor + '22', color: tx.categoryColor }}>{tx.categoryLabel}</span>}
-                            </div>
-                            <span className={`${styles.txAmount} ${tx.amount >= 0 ? styles.green : styles.red}`}>{fmt(tx.amount)}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            {/* Monatsübersicht */}
+            <MonatsKachel cashflowSeries={cashflowSeries} year={data.year ?? new Date().getFullYear()} />
         </main>
     );
 }
