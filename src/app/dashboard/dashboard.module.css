@@ -517,6 +517,43 @@
     flex-wrap: wrap;
 }
 
+.monthFilterSelect {
+    background: #111;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #d1d5db;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s ease;
+    min-width: 160px;
+}
+
+.monthFilterSelect:hover,
+.monthFilterSelect:focus {
+    border-color: #4ade80;
+}
+
+.thSortable {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s ease;
+}
+
+.thSortable:hover {
+    color: #fff;
+}
+
+.sortIcon {
+    margin-left: 4px;
+    font-size: 11px;
+    opacity: 0.7;
+    vertical-align: middle;
+}
+
+
 .searchForm {
     display: flex;
     gap: 8px;

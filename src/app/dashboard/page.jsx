@@ -167,97 +167,103 @@ function TxDetailModal({ tx, categories, onClose, onSaved }) {
 }
 
 // ─── Transaktionen-Tab ───
+const MONTHS_DE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+function monthOptions() {
+    const opts = [];
+    const now = new Date();
+    for (let i = -36; i <= 6; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        opts.push({ val, label: `${MONTHS_DE[d.getMonth()]} ${d.getFullYear()}` });
+    }
+    return opts.reverse();
+}
+const SORT_COLS = [
+    { key: 'date', label: 'Datum' },
+    { key: 'counterparty', label: 'Gegenpartei' },
+    { key: 'memo', label: 'Verwendungszweck' },
+    { key: null, label: 'Kategorie' },
+    { key: 'amount', label: 'Betrag' },
+];
 function TransaktionenTab({ categories }) {
     const [txData, setTxData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
-    const [selectedTx, setSelectedTx] = useState(null);  // Detail-Modal
-    const [selectedIds, setSelectedIds] = useState(new Set()); // Bulk-Selektion
+    const [month, setMonth] = useState('');
+    const [sortKey, setSortKey] = useState('date');
+    const [sortDir, setSortDir] = useState('desc');
+    const [selectedTx, setSelectedTx] = useState(null);
+    const [selectedIds, setSelectedIds] = useState(new Set());
     const [bulkCat, setBulkCat] = useState('');
     const [bulkSaving, setBulkSaving] = useState(false);
     const [bulkDone, setBulkDone] = useState(false);
 
-    function load(p, q) {
+    function load(p, q, m, sk, sd) {
         setLoading(true);
         setSelectedIds(new Set());
-        fetch(`/api/transactions?page=${p}&search=${encodeURIComponent(q)}`)
+        const ps = new URLSearchParams({ page: p, search: q, sort: sk, dir: sd });
+        if (m) ps.set('month', m);
+        fetch(`/api/transactions?${ps}`)
             .then(r => r.json())
             .then(d => { setTxData(d); setLoading(false); })
             .catch(() => setLoading(false));
     }
 
-    useEffect(() => { load(page, query); }, [page, query]);
+    useEffect(() => { load(page, query, month, sortKey, sortDir); }, [page, query, month, sortKey, sortDir]);
 
     function handleSearch(e) { e.preventDefault(); setPage(1); setQuery(search); }
 
+    function handleSort(key) {
+        if (!key) return;
+        const next = key === sortKey ? (sortDir === 'desc' ? 'asc' : 'desc') : 'desc';
+        setSortKey(key); setSortDir(next); setPage(1);
+    }
+
     function toggleId(id) {
-        setSelectedIds(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id); else next.add(id);
-            return next;
-        });
+        setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
         setBulkDone(false);
     }
-
     function toggleAll() {
-        const allIds = (txData?.transactions || []).map(t => t.id);
-        if (selectedIds.size === allIds.length) setSelectedIds(new Set());
-        else setSelectedIds(new Set(allIds));
+        const all = (txData?.transactions || []).map(t => t.id);
+        setSelectedIds(selectedIds.size === all.length ? new Set() : new Set(all));
         setBulkDone(false);
     }
-
     async function applyBulk() {
         if (!bulkCat || selectedIds.size === 0) return;
         setBulkSaving(true);
-        const catId = bulkCat === '__none__' ? null : bulkCat;
         await fetch('/api/transactions/bulk', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ids: [...selectedIds], category_id: catId }),
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: [...selectedIds], category_id: bulkCat === '__none__' ? null : bulkCat }),
         });
-        setBulkSaving(false);
-        setBulkDone(true);
-        setSelectedIds(new Set());
-        setBulkCat('');
-        load(page, query);
+        setBulkSaving(false); setBulkDone(true); setSelectedIds(new Set()); setBulkCat('');
+        load(page, query, month, sortKey, sortDir);
     }
 
     const allSelected = txData?.transactions?.length > 0 && selectedIds.size === txData.transactions.length;
     const someSelected = selectedIds.size > 0;
+    const sortIcon = (key) => !key ? null : (
+        <span className={styles.sortIcon}>{key !== sortKey ? '⇅' : sortDir === 'asc' ? '↑' : '↓'}</span>
+    );
 
     return (
         <div className={styles.tabContent}>
             {selectedTx && (
-                <TxDetailModal
-                    tx={selectedTx}
-                    categories={categories}
+                <TxDetailModal tx={selectedTx} categories={categories}
                     onClose={() => setSelectedTx(null)}
-                    onSaved={() => load(page, query)}
-                />
+                    onSaved={() => load(page, query, month, sortKey, sortDir)} />
             )}
 
-            {/* Schwebende Action-Bar */}
             {someSelected && (
                 <div className={styles.bulkBar}>
                     <span className={styles.bulkCount}>{selectedIds.size} ausgewählt</span>
-                    <select
-                        className={styles.bulkSelect}
-                        value={bulkCat}
-                        onChange={e => { setBulkCat(e.target.value); setBulkDone(false); }}
-                    >
+                    <select className={styles.bulkSelect} value={bulkCat} onChange={e => { setBulkCat(e.target.value); setBulkDone(false); }}>
                         <option value="">— Kategorie wählen —</option>
-                        {(categories || []).map(c => (
-                            <option key={c.category_id} value={c.category_id}>{c.label}</option>
-                        ))}
+                        {(categories || []).map(c => <option key={c.category_id} value={c.category_id}>{c.label}</option>)}
                         <option value="__none__">⊘ Keine Kategorie</option>
                     </select>
-                    <button
-                        className={styles.bulkApplyBtn}
-                        onClick={applyBulk}
-                        disabled={!bulkCat || bulkSaving}
-                    >
+                    <button className={styles.bulkApplyBtn} onClick={applyBulk} disabled={!bulkCat || bulkSaving}>
                         {bulkSaving ? 'Speichern…' : 'Zuweisen'}
                     </button>
                     {bulkDone && <span className={styles.green} style={{ fontSize: 13 }}>✓ Gespeichert</span>}
@@ -267,9 +273,15 @@ function TransaktionenTab({ categories }) {
 
             <div className={styles.txToolbar}>
                 <form onSubmit={handleSearch} className={styles.searchForm}>
-                    <input type="text" className={styles.searchInput} value={search} onChange={e => setSearch(e.target.value)} placeholder="Suche nach Gegenpartei oder Verwendungszweck…" />
+                    <input type="text" className={styles.searchInput} value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Suche nach Gegenpartei oder Verwendungszweck…" />
                     <button type="submit" className={styles.searchBtn}>Suchen</button>
                 </form>
+                <select className={styles.monthFilterSelect} value={month} onChange={e => { setMonth(e.target.value); setPage(1); }}>
+                    <option value="">Alle Monate</option>
+                    {monthOptions().map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                </select>
                 {txData && <span className={styles.txCount}>{txData.total.toLocaleString('de-DE')} Buchungen</span>}
             </div>
 
@@ -277,30 +289,19 @@ function TransaktionenTab({ categories }) {
                 <>
                     <div className={styles.txTable}>
                         <div className={`${styles.txTableHead} ${styles.txTableHeadBulk}`}>
-                            <span>
-                                <input
-                                    type="checkbox"
-                                    className={styles.cbx}
-                                    checked={allSelected}
-                                    onChange={toggleAll}
-                                    title="Alle auswählen"
-                                />
-                            </span>
-                            <span>Datum</span><span>Gegenpartei</span><span>Verwendungszweck</span><span>Kategorie</span><span>Betrag</span>
+                            <span><input type="checkbox" className={styles.cbx} checked={allSelected} onChange={toggleAll} title="Alle auswählen" /></span>
+                            {SORT_COLS.map(col => (
+                                <span key={col.label} className={col.key ? styles.thSortable : ''} onClick={() => handleSort(col.key)}>
+                                    {col.label}{sortIcon(col.key)}
+                                </span>
+                            ))}
                         </div>
                         {(txData?.transactions || []).map(tx => (
-                            <div
-                                key={tx.id}
+                            <div key={tx.id}
                                 className={`${styles.txTableRow} ${styles.txTableRowBulk} ${selectedIds.has(tx.id) ? styles.txRowSelected : ''}`}
-                                onClick={() => setSelectedTx({ ...tx, catId: null })}
-                            >
+                                onClick={() => setSelectedTx({ ...tx, catId: null })}>
                                 <span onClick={e => { e.stopPropagation(); toggleId(tx.id); }}>
-                                    <input
-                                        type="checkbox"
-                                        className={styles.cbx}
-                                        checked={selectedIds.has(tx.id)}
-                                        onChange={() => toggleId(tx.id)}
-                                    />
+                                    <input type="checkbox" className={styles.cbx} checked={selectedIds.has(tx.id)} onChange={() => toggleId(tx.id)} />
                                 </span>
                                 <span className={styles.txDateCell}>{tx.date}</span>
                                 <span className={styles.txCounterCell} title={tx.counterparty}>{tx.counterparty}</span>
