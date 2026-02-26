@@ -311,7 +311,7 @@ function TransaktionenTab({ categories }) {
                             <div key={tx.id}
                                 className={`${styles.txTableRow} ${styles.txTableRowBulk} ${selectedIds.has(tx.id) ? styles.txRowSelected : ''}`}
                                 onClick={() => setSelectedTx({ ...tx, catId: null })}>
-                                <span onClick={e => { e.stopPropagation(); toggleId(tx.id); }}>
+                                <span onClick={e => e.stopPropagation()}>
                                     <input type="checkbox" className={styles.cbx} checked={selectedIds.has(tx.id)} onChange={() => toggleId(tx.id)} />
                                 </span>
                                 <span className={styles.txDateCell}>{tx.date}</span>
