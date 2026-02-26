@@ -768,7 +768,7 @@ export default function DashboardPage() {
 
             <header className={styles.header}>
                 <div className={styles.headerBrand}>
-                    <div className={styles.headerOrb} />
+                    <img src="/logo.png" alt="Haushaltsbuch Logo" className={styles.headerLogo} />
                     <span className={styles.headerTitle}>Haushaltsbuch</span>
                 </div>
                 <nav className={styles.nav}>

@@ -26,12 +26,12 @@
     gap: 10px;
 }
 
-.headerOrb {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #6ee7b7, #059669, #064e3b);
-    box-shadow: 0 0 14px rgba(74, 222, 128, 0.45);
+.headerLogo {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: contain;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
 }
 
 .headerTitle {
