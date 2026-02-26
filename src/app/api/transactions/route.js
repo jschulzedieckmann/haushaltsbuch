@@ -14,9 +14,10 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const month = searchParams.get('month') || '';     // 'YYYY-MM' oder ''
+    const month = searchParams.get('month') || '';
     const sortKey = searchParams.get('sort') || 'date';
-    const dir = searchParams.get('dir') === 'asc';  // true = asc, false = desc (default)
+    const dir = searchParams.get('dir') === 'asc';
+    const uncat = searchParams.get('uncat') === '1';  // nur Transaktionen ohne Kategorie
 
     const limit = 50;
     const from = (page - 1) * limit;
@@ -35,12 +36,15 @@ export async function GET(request) {
     }
 
     if (month) {
-        // month = 'YYYY-MM' → Bereich des Monats berechnen
         const [y, m] = month.split('-').map(Number);
         const lastDay = new Date(y, m, 0).getDate();
         query = query
             .gte('booking_date', `${month}-01`)
             .lte('booking_date', `${month}-${String(lastDay).padStart(2, '0')}`);
+    }
+
+    if (uncat) {
+        query = query.is('category_id', null);
     }
 
     const { data, error, count } = await query;

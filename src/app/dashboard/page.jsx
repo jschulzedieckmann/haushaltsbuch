@@ -189,6 +189,7 @@ function TransaktionenTab({ categories }) {
     const [availableMonths, setAvailableMonths] = useState([]);
     const [sortKey, setSortKey] = useState('date');
     const [sortDir, setSortDir] = useState('desc');
+    const [uncat, setUncat] = useState(false);  // nur ohne Kategorie
     const [selectedTx, setSelectedTx] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [bulkCat, setBulkCat] = useState('');
@@ -202,18 +203,19 @@ function TransaktionenTab({ categories }) {
             .then(d => setAvailableMonths(d.months || []));
     }, []);
 
-    function load(p, q, m, sk, sd) {
+    function load(p, q, m, sk, sd, uc) {
         setLoading(true);
         setSelectedIds(new Set());
         const ps = new URLSearchParams({ page: p, search: q, sort: sk, dir: sd });
         if (m) ps.set('month', m);
+        if (uc) ps.set('uncat', '1');
         fetch(`/api/transactions?${ps}`)
             .then(r => r.json())
             .then(d => { setTxData(d); setLoading(false); })
             .catch(() => setLoading(false));
     }
 
-    useEffect(() => { load(page, query, month, sortKey, sortDir); }, [page, query, month, sortKey, sortDir]);
+    useEffect(() => { load(page, query, month, sortKey, sortDir, uncat); }, [page, query, month, sortKey, sortDir, uncat]);
 
     function handleSearch(e) { e.preventDefault(); setPage(1); setQuery(search); }
 
@@ -240,7 +242,7 @@ function TransaktionenTab({ categories }) {
             body: JSON.stringify({ ids: [...selectedIds], category_id: bulkCat === '__none__' ? null : bulkCat }),
         });
         setBulkSaving(false); setBulkDone(true); setSelectedIds(new Set()); setBulkCat('');
-        load(page, query, month, sortKey, sortDir);
+        load(page, query, month, sortKey, sortDir, uncat);
     }
 
     const allSelected = txData?.transactions?.length > 0 && selectedIds.size === txData.transactions.length;
@@ -254,7 +256,7 @@ function TransaktionenTab({ categories }) {
             {selectedTx && (
                 <TxDetailModal tx={selectedTx} categories={categories}
                     onClose={() => setSelectedTx(null)}
-                    onSaved={() => load(page, query, month, sortKey, sortDir)} />
+                    onSaved={() => load(page, query, month, sortKey, sortDir, uncat)} />
             )}
 
             {someSelected && (
@@ -284,6 +286,13 @@ function TransaktionenTab({ categories }) {
                     <option value="">Alle Monate</option>
                     {availableMonths.map(ym => <option key={ym} value={ym}>{ymToLabel(ym)}</option>)}
                 </select>
+                <button
+                    className={`${styles.uncatBtn} ${uncat ? styles.uncatBtnActive : ''}`}
+                    onClick={() => { setUncat(u => !u); setPage(1); }}
+                    title="Nur Transaktionen ohne Kategorie anzeigen"
+                >
+                    ⊘ Ohne Kategorie
+                </button>
                 {txData && <span className={styles.txCount}>{txData.total.toLocaleString('de-DE')} Buchungen</span>}
             </div>
 

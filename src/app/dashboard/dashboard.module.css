@@ -1450,3 +1450,28 @@
     font-weight: 600;
     flex-shrink: 0;
 }
+
+/* ─── Ohne-Kategorie-Toggle ─── */
+.uncatBtn {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #9ca3af;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.uncatBtn:hover {
+    border-color: #4ade80;
+    color: #d1d5db;
+}
+
+.uncatBtnActive {
+    border-color: #4ade80;
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.08);
+}
