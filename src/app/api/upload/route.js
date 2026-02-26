@@ -21,9 +21,14 @@ function parseGermanDate(s) {
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
-function makeTransactionId(sourceFile, rowIndex) {
+/**
+ * Inhaltsbasierte transaction_id:
+ * Gleiche Buchung (=gleicher Inhalt) in unterschiedlichen Dateien
+ * erhält dieselbe ID → Upsert ist automatisch idempotent.
+ */
+function makeTransactionId(bookingDate, amount, counterparty, memo) {
     return createHash('sha256')
-        .update(`${sourceFile}:${rowIndex}`)
+        .update(`${bookingDate}|${amount}|${counterparty ?? ''}|${memo ?? ''}`)
         .digest('hex');
 }
 
@@ -42,6 +47,8 @@ function parseING(csvText, filename) {
 
     const rawRows = [];
     const transactions = [];
+    // Dedup-Set für Duplikate innerhalb derselben CSV-Datei
+    const seenKeys = new Set();
     let dataRowIdx = 0;
 
     for (let i = headerIdx + 1; i < lines.length; i++) {
@@ -56,37 +63,40 @@ function parseING(csvText, filename) {
         const bookingDate = parseGermanDate(buchung);
         const valueDate = parseGermanDate(wertstellungsdatum) || bookingDate;
         const amount = parseGermanDecimal(betrag);
+        const counterparty = auftraggeber || '';
+        const memo = verwendungszweck || buchungstext || '';
 
         if (!bookingDate || amount === null) continue;
 
-        const txId = makeTransactionId(filename, dataRowIdx);
+        // Inhaltsbasierter Fingerprint — Duplikate innerhalb der Datei überspringen
+        const contentKey = `${bookingDate}|${amount}|${counterparty}|${memo}`;
+        if (seenKeys.has(contentKey)) continue;
+        seenKeys.add(contentKey);
 
-        // raw_ing_exports: Schema hat keine transaction_id-Unique-Spalte,
-        // PK ist id (auto-increment). Wir speichern Rohdaten als INSERT IGNORE.
+        const txId = makeTransactionId(bookingDate, amount, counterparty, memo);
+
         rawRows.push({
             source_file: filename,
             row_index: dataRowIdx,
             buchung: buchung || null,
             wertstellungsdatum: wertstellungsdatum || null,
-            auftraggeber_empfaenger: auftraggeber || '',
+            auftraggeber_empfaenger: counterparty,
             buchungstext: buchungstext || '',
             verwendungszweck: verwendungszweck || '',
             saldo: saldo || '',
             saldo_waehrung: saldoWaehrung || 'EUR',
-            betrag: betrag || '',      // text-Feld im Schema
+            betrag: betrag || '',
             betrag_waehrung: betragWaehrung || 'EUR',
         });
 
-        // transactions: Schema hat transaction_id (PK), booking_date, value_date,
-        // amount (numeric), currency, counterparty, memo, source_file — KEIN balance_after!
         transactions.push({
             transaction_id: txId,
             booking_date: bookingDate,
             value_date: valueDate,
             amount: amount,
             currency: betragWaehrung || 'EUR',
-            counterparty: auftraggeber || '',
-            memo: verwendungszweck || buchungstext || '',
+            counterparty,
+            memo,
             source_file: filename,
         });
 
@@ -116,18 +126,13 @@ export async function POST(request) {
         const BATCH = 50;
         let rawInserted = 0;
         let txInserted = 0;
+        let txSkipped = 0;
         const errors = [];
 
-        // raw_ing_exports: INSERT (kein Upsert – PK ist auto-increment)
-        // Duplikate werden toleriert; wir nutzen ignoreDuplicates auf source_file+row_index
-        // Da es keinen UNIQUE-Index auf (source_file, row_index) gibt, einfach INSERT.
-        // Fehler bei Duplicate werden akzeptiert (der Import ist idempotent via transaction_id).
+        // raw_ing_exports: einfaches INSERT (Rohdaten, kein Inhalt-Dedup nötig)
         for (let i = 0; i < rawRows.length; i += BATCH) {
             const batch = rawRows.slice(i, i + BATCH);
-            const { error } = await supabase
-                .from('raw_ing_exports')
-                .insert(batch);
-            // Fehler sind OK — können Duplikate sein wenn die Datei nochmal hochgeladen wird
+            const { error } = await supabase.from('raw_ing_exports').insert(batch);
             if (error && !error.message.includes('duplicate') && !error.message.includes('conflict')) {
                 errors.push(`raw_batch_${i}: ${error.message}`);
             } else {
@@ -135,14 +140,21 @@ export async function POST(request) {
             }
         }
 
-        // transactions: Upsert via transaction_id (SHA-256 → deterministisch)
+        // transactions: Upsert auf transaction_id (inhaltsbasiert).
+        // ignoreDuplicates: true → vorhandene Zeilen bleiben unverändert.
         for (let i = 0; i < transactions.length; i += BATCH) {
             const batch = transactions.slice(i, i + BATCH);
-            const { error, count } = await supabase
+            const { error, data } = await supabase
                 .from('transactions')
-                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true });
-            if (error) errors.push(`tx_batch_${i}: ${error.message}`);
-            else txInserted += batch.length;
+                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true })
+                .select('transaction_id');
+            if (error) {
+                errors.push(`tx_batch_${i}: ${error.message}`);
+            } else {
+                const inserted = (data || []).length;
+                txInserted += inserted;
+                txSkipped += batch.length - inserted;
+            }
         }
 
         return NextResponse.json({
@@ -151,8 +163,9 @@ export async function POST(request) {
             parsed: transactions.length,
             rawInserted,
             txInserted,
+            txSkipped,
             errors,
-            message: `${txInserted} Transaktionen importiert (${transactions.length - txInserted} bereits vorhanden).`,
+            message: `${txInserted} neu importiert, ${txSkipped} bereits vorhanden, ${transactions.length} in der Datei.`,
         });
     } catch (err) {
         console.error('Upload error:', err);
