@@ -1475,3 +1475,249 @@
     color: #4ade80;
     background: rgba(74, 222, 128, 0.08);
 }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 900px)
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .grid {
+        grid-template-columns: 1fr 1fr;
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .chartCard {
+        grid-column: 1 / 3;
+    }
+
+    .kpiPanel {
+        grid-column: 1 / 2;
+    }
+
+    .lineCard {
+        grid-column: 2 / 3;
+    }
+
+    .catCard {
+        grid-column: 1 / 2;
+    }
+
+    .featureCard {
+        grid-column: 2 / 3;
+    }
+
+    .monthCard {
+        grid-column: 1 / 3;
+    }
+
+    .headerTitle {
+        font-size: 14px;
+    }
+
+    .navBtn {
+        padding: 7px 13px;
+        font-size: 12px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE — PHONE (≤ 640px)
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+
+    /* ── Header: 2-zeilig ── */
+    .header {
+        flex-wrap: wrap;
+        padding: 12px 16px;
+        gap: 10px;
+    }
+
+    .headerBrand {
+        flex: 1;
+    }
+
+    .headerLogo {
+        width: 28px;
+        height: 28px;
+    }
+
+    .headerTitle {
+        font-size: 13px;
+    }
+
+    .nav {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        padding: 3px;
+    }
+
+    .navBtn {
+        padding: 7px 0;
+        flex: 1;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .headerRight {
+        gap: 8px;
+    }
+
+    .uploadBtn {
+        padding: 6px 12px;
+        font-size: 11px;
+    }
+
+    .yearSelect {
+        font-size: 12px;
+        padding: 5px 8px;
+        min-width: 60px;
+    }
+
+    /* ── Bento Grid → single column ── */
+    .grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .chartCard,
+    .kpiPanel,
+    .lineCard,
+    .catCard,
+    .featureCard,
+    .monthCard {
+        grid-column: 1 / 2;
+    }
+
+    /* KPIs nebeneinander auf Phone */
+    .kpiGrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .kpiHeroNum {
+        font-size: 22px;
+    }
+
+    /* ── Tab Content ── */
+    .tabContent {
+        padding: 12px;
+    }
+
+    /* ── Transaktions-Toolbar stapeln ── */
+    .txToolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .searchForm {
+        flex: unset;
+        width: 100%;
+    }
+
+    .searchInput {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .monthFilterSelect {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .uncatBtn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .txCount {
+        font-size: 11px;
+    }
+
+    /* ── Transaktions-Tabelle ── */
+    .txTable {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .txTableHead,
+    .txTableRow {
+        min-width: 560px;
+    }
+
+    /* Spalten: Checkbox | Datum | Gegenpartei | Betrag (Memo + Kategorie verstecken) */
+    .txTableHeadBulk,
+    .txTableRowBulk {
+        grid-template-columns: 36px 90px 1fr 100px !important;
+    }
+
+    /* Verwendungszweck und Kategorie auf Phone ausblenden */
+    .txTableHead span:nth-child(4),
+    .txTableHead span:nth-child(5),
+    .txTableRow span:nth-child(4),
+    .txTableRow span:nth-child(5) {
+        display: none;
+    }
+
+    /* ── Modals: fullscreen ── */
+    .modalOverlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .modal {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    /* ── Bulk-Bar ── */
+    .bulkBar {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .bulkSelect {
+        min-width: 0;
+        flex: 1;
+    }
+
+    /* ── Paginierung ── */
+    .pagination {
+        gap: 8px;
+    }
+
+    .pageBtn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    /* ── Kategorie-Detail ── */
+    .catDetailBar {
+        min-width: 12px;
+    }
+
+    /* ── Monatsübersicht Top-5 ── */
+    .monthTop5Label {
+        max-width: 120px;
+    }
+
+    /* ── Charts ── */
+    .chartWrap {
+        height: 180px;
+    }
+
+    .lineWrap {
+        height: 140px;
+    }
+
+    /* ── Card ── */
+    .cardHeader {
+        margin-bottom: 12px;
+    }
+}
