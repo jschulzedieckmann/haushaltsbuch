@@ -168,15 +168,9 @@ function TxDetailModal({ tx, categories, onClose, onSaved }) {
 
 // ─── Transaktionen-Tab ───
 const MONTHS_DE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-function monthOptions() {
-    const opts = [];
-    const now = new Date();
-    for (let i = -36; i <= 6; i++) {
-        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        opts.push({ val, label: `${MONTHS_DE[d.getMonth()]} ${d.getFullYear()}` });
-    }
-    return opts.reverse();
+function ymToLabel(ym) {
+    const [y, m] = ym.split('-');
+    return `${MONTHS_DE[parseInt(m, 10) - 1]} ${y}`;
 }
 const SORT_COLS = [
     { key: 'date', label: 'Datum' },
@@ -192,6 +186,7 @@ function TransaktionenTab({ categories }) {
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
     const [month, setMonth] = useState('');
+    const [availableMonths, setAvailableMonths] = useState([]);
     const [sortKey, setSortKey] = useState('date');
     const [sortDir, setSortDir] = useState('desc');
     const [selectedTx, setSelectedTx] = useState(null);
@@ -199,6 +194,13 @@ function TransaktionenTab({ categories }) {
     const [bulkCat, setBulkCat] = useState('');
     const [bulkSaving, setBulkSaving] = useState(false);
     const [bulkDone, setBulkDone] = useState(false);
+
+    // Monate mit Daten einmalig laden
+    useEffect(() => {
+        fetch('/api/transactions/months')
+            .then(r => r.json())
+            .then(d => setAvailableMonths(d.months || []));
+    }, []);
 
     function load(p, q, m, sk, sd) {
         setLoading(true);
@@ -280,7 +282,7 @@ function TransaktionenTab({ categories }) {
                 </form>
                 <select className={styles.monthFilterSelect} value={month} onChange={e => { setMonth(e.target.value); setPage(1); }}>
                     <option value="">Alle Monate</option>
-                    {monthOptions().map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+                    {availableMonths.map(ym => <option key={ym} value={ym}>{ymToLabel(ym)}</option>)}
                 </select>
                 {txData && <span className={styles.txCount}>{txData.total.toLocaleString('de-DE')} Buchungen</span>}
             </div>
