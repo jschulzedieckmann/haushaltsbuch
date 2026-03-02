@@ -140,33 +140,36 @@ export async function POST(request) {
             }
         }
 
-        // transactions: Upsert auf transaction_id (SHA-256 des Inhalts = idempotent).
-        // ignoreDuplicates:true → bei PK-Conflict die Zeile stillschweigend überspringen.
+        // transactions: Upsert auf Inhaltsspalten (booking_date,amount,counterparty,memo).
+        // Diese vier Felder sind durch einen UNIQUE-Constraint gesichert.
+        // → gleiche Buchung in unterschiedlichen Dateien oder mit anderem transaction_id
+        //   wird sauber erkannt und übersprungen.
+        const CONFLICT_COLS = 'booking_date,amount,counterparty,memo';
         for (let i = 0; i < transactions.length; i += BATCH) {
             const batch = transactions.slice(i, i + BATCH);
             const { error } = await supabase
                 .from('transactions')
-                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true });
+                .upsert(batch, { onConflict: CONFLICT_COLS, ignoreDuplicates: true });
 
             if (!error) {
-                // Wir wissen nicht genau wie viele neu waren – batch.length als Max
                 txInserted += batch.length;
             } else {
-                // Bei Fehler: jede Zeile einzeln versuchen (Fallback)
+                // Fallback: jede Zeile einzeln
                 for (const row of batch) {
                     const { error: rowErr } = await supabase
                         .from('transactions')
-                        .upsert(row, { onConflict: 'transaction_id', ignoreDuplicates: true });
+                        .upsert(row, { onConflict: CONFLICT_COLS, ignoreDuplicates: true });
                     if (!rowErr) {
                         txInserted++;
                     } else if (rowErr.code === '23505') {
-                        txSkipped++;          // Unique-Conflict → schon vorhanden
+                        txSkipped++;
                     } else {
                         errors.push(`tx_row: ${rowErr.message}`);
                     }
                 }
             }
         }
+
 
 
         return NextResponse.json({
