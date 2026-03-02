@@ -129,33 +129,45 @@ export async function POST(request) {
         let txSkipped = 0;
         const errors = [];
 
-        // raw_ing_exports: einfaches INSERT (Rohdaten, kein Inhalt-Dedup nötig)
+        // raw_ing_exports: einfaches INSERT (Rohdaten)
         for (let i = 0; i < rawRows.length; i += BATCH) {
             const batch = rawRows.slice(i, i + BATCH);
             const { error } = await supabase.from('raw_ing_exports').insert(batch);
-            if (error && !error.message.includes('duplicate') && !error.message.includes('conflict')) {
+            if (error && !error.code?.includes('23505')) {
                 errors.push(`raw_batch_${i}: ${error.message}`);
             } else {
                 rawInserted += batch.length;
             }
         }
 
-        // transactions: Upsert auf transaction_id (inhaltsbasiert).
-        // ignoreDuplicates: true → vorhandene Zeilen bleiben unverändert.
+        // transactions: Upsert auf transaction_id (SHA-256 des Inhalts = idempotent).
+        // ignoreDuplicates:true → bei PK-Conflict die Zeile stillschweigend überspringen.
         for (let i = 0; i < transactions.length; i += BATCH) {
             const batch = transactions.slice(i, i + BATCH);
-            const { error, data } = await supabase
+            const { error } = await supabase
                 .from('transactions')
-                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true })
-                .select('transaction_id');
-            if (error) {
-                errors.push(`tx_batch_${i}: ${error.message}`);
+                .upsert(batch, { onConflict: 'transaction_id', ignoreDuplicates: true });
+
+            if (!error) {
+                // Wir wissen nicht genau wie viele neu waren – batch.length als Max
+                txInserted += batch.length;
             } else {
-                const inserted = (data || []).length;
-                txInserted += inserted;
-                txSkipped += batch.length - inserted;
+                // Bei Fehler: jede Zeile einzeln versuchen (Fallback)
+                for (const row of batch) {
+                    const { error: rowErr } = await supabase
+                        .from('transactions')
+                        .upsert(row, { onConflict: 'transaction_id', ignoreDuplicates: true });
+                    if (!rowErr) {
+                        txInserted++;
+                    } else if (rowErr.code === '23505') {
+                        txSkipped++;          // Unique-Conflict → schon vorhanden
+                    } else {
+                        errors.push(`tx_row: ${rowErr.message}`);
+                    }
+                }
             }
         }
+
 
         return NextResponse.json({
             ok: true,
